@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. Install build tools and network dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    uuid-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Download and compile ONLY the SQS module of the AWS SDK
+RUN git clone --recurse-submodules --depth 1 https://github.com/aws/aws-sdk-cpp.git /tmp/aws-sdk-cpp && \
+    mkdir /tmp/aws-sdk-build && cd /tmp/aws-sdk-build && \
+    cmake /tmp/aws-sdk-cpp -DCMAKE_BUILD_TYPE=Release -DBUILD_ONLY="sqs" -DENABLE_TESTING=OFF && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    rm -rf /tmp/aws-sdk-cpp /tmp/aws-sdk-build
+
+WORKDIR /app
+
+# 3. Copy your project code and build the server
+COPY . .
+RUN make ChatServer
+
+EXPOSE 8080
+
+CMD ["./ChatServer"]

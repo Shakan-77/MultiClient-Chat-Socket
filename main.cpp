@@ -10,6 +10,7 @@
 #include <aws/core/Aws.h>
 #include <aws/sqs/SQSClient.h>
 #include <aws/sqs/model/SendMessageRequest.h>
+#include <cstdlib>
 
 constexpr int PORT = 8080;
 constexpr int MAX_CLIENTS = 50;
@@ -53,7 +54,7 @@ void handle_client(int client_socket) {
     }
     
     std::cout << "Client connected on socket " << client_socket 
-              << " (Thread: " << std::this_thread::get_id() << ")\n";
+              << " (Thread: " << std::this_thread::get_id() << ")" << std::endl;
     
     char buffer[1024];
     
@@ -63,7 +64,7 @@ void handle_client(int client_socket) {
         ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
         
         if (bytes_read <= 0) {
-            std::cout << "Client on socket " << client_socket << " disconnected.\n";
+            std::cout << "Client on socket " << client_socket << " disconnected." << std::endl;
             break; // Exit loop on disconnect
         }
         
@@ -97,15 +98,21 @@ void handle_client(int client_socket) {
         std::string jsonPayload = "{\"userId\": \"user_" + std::to_string(client_socket) + "\", \"length\": " + std::to_string(bytes_read) + "}";
         
         Aws::Client::ClientConfiguration clientConfig;
-        clientConfig.region = "us-east-1";
+        clientConfig.region = "ap-south-1"; 
         Aws::SQS::SQSClient sqsClient(clientConfig);
         Aws::SQS::Model::SendMessageRequest request;
-        request.SetQueueUrl("https://sqs.us-east-1.amazonaws.com/000000000000/example-queue");
+        const char* env_url = std::getenv("SQS_QUEUE_URL");
+        if (env_url == nullptr) {
+            std::cerr << "CRITICAL ERROR: SQS_QUEUE_URL environment variable is missing!" << std::endl;
+            return; // Exit before trying to connect to AWS
+        }
+        std::string sqs_queue_url = env_url;
+        request.SetQueueUrl(sqs_queue_url); 
         request.SetMessageBody(jsonPayload);
         
         auto outcome = sqsClient.SendMessage(request);
         if (!outcome.IsSuccess()) {
-            std::cerr << "[AWS Pending] SQS push skipped: " << outcome.GetError().GetMessage() << "\n";
+            std::cerr << "[AWS Pending] SQS push skipped: " << outcome.GetError().GetMessage() << "" << std::endl;
         }
     }
     
@@ -121,12 +128,12 @@ int main() {
     // 1. Initialize the AWS SDK before making any socket or AWS calls
     Aws::SDKOptions options;
     Aws::InitAPI(options);
-    std::cout << "AWS SDK Initialized.\n";
+    std::cout << "AWS SDK Initialized." << std::endl;
 
     // 2. Setup the standard POSIX socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == 0) {
-        std::cerr << "Socket creation failed\n";
+        std::cerr << "Socket creation failed" << std::endl;
         return 1;
     }
 
@@ -140,16 +147,16 @@ int main() {
     address.sin_port = htons(PORT);
 
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        std::cerr << "Bind failed\n";
+        std::cerr << "Bind failed" << std::endl;
         return 1;
     }
 
     if (listen(server_fd, MAX_CLIENTS) < 0) {
-        std::cerr << "Listen failed\n";
+        std::cerr << "Listen failed" << std::endl;
         return 1;
     }
 
-    std::cout << "C++ Chat Server with AWS SQS integration listening on port " << PORT << "...\n";
+    std::cout << "C++ Chat Server with AWS SQS integration listening on port " << PORT << "..." << std::endl;
 
     std::vector<std::thread> client_threads;
 
@@ -160,7 +167,7 @@ int main() {
         
         int new_socket = accept(server_fd, (struct sockaddr*)&client_address, &client_len);
         if (new_socket < 0) {
-            std::cerr << "Accept failed\n";
+            std::cerr << "Accept failed" << std::endl;
             continue;
         }
 

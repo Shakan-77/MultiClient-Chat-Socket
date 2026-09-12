@@ -16,7 +16,7 @@ void receive_messages(int socket_fd) {
         memset(buffer, 0, sizeof(buffer));
         ssize_t bytes_read = read(socket_fd, buffer, sizeof(buffer) - 1);
         if (bytes_read <= 0) {
-            std::cout << "\nDisconnected from server.\n";
+            std::cout << "\nDisconnected from server." << std::endl;
             exit(0);
         }
         // Clear the current input line, print the message, and restore the prompt
@@ -27,7 +27,7 @@ void receive_messages(int socket_fd) {
 int main() {
     int client_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (client_fd < 0) {
-        std::cerr << "Socket creation failed\n";
+        std::cerr << "Socket creation failed" << std::endl;
         return 1;
     }
 
@@ -37,11 +37,11 @@ int main() {
     inet_pton(AF_INET, "127.0.0.1", &server_address.sin_addr);
 
     if (connect(client_fd, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
-        std::cerr << "Connection to server failed\n";
+        std::cerr << "Connection to server failed" << std::endl;
         return 1;
     }
 
-    std::cout << "Connected to Chat Server. Type your messages, '/msg <user_id> <message>' for a private message, or '/quit' to exit.\n";
+    std::cout << "Connected to Chat Server. Type your messages, '/msg <user_id> <message>' for a private message, or '/quit' to exit." << std::endl;
     
     // Launch receive thread
     std::thread receiver(receive_messages, client_fd);
