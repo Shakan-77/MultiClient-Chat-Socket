@@ -97,10 +97,10 @@ void handle_client(int client_socket) {
         std::string jsonPayload = "{\"userId\": \"user_" + std::to_string(client_socket) + "\", \"length\": " + std::to_string(bytes_read) + "}";
         
         Aws::Client::ClientConfiguration clientConfig;
-        clientConfig.region = "ap-south-1"; 
+        clientConfig.region = "us-east-1";
         Aws::SQS::SQSClient sqsClient(clientConfig);
         Aws::SQS::Model::SendMessageRequest request;
-        request.SetQueueUrl("https://sqs.ap-south-1.amazonaws.com/036900132979/chat-metadata-queue"); 
+        request.SetQueueUrl("https://sqs.us-east-1.amazonaws.com/000000000000/example-queue");
         request.SetMessageBody(jsonPayload);
         
         auto outcome = sqsClient.SendMessage(request);
