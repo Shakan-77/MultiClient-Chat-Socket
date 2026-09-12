@@ -1,0 +1,11 @@
+.env
+
+# Build outputs
+ChatServer
+ChatClient
+build/
+
+# Python environment and cache
+venv/
+__pycache__/
+*.py[cod]
